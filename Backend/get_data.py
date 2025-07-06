@@ -1,6 +1,7 @@
 import os
 import time
 import pandas as pd
+import json
 from threading import Thread
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
@@ -52,7 +53,7 @@ class IBClient(EWrapper, EClient):
 # ---- CONFIG ----
 
 symbol = 'AAPL'
-duration = '5 D'
+duration = '365 D'
 bar_size = '1 hour'
 folder = 'data'
 
@@ -61,9 +62,25 @@ os.makedirs(folder, exist_ok=True)
 
 csv_filename = os.path.join(
     folder,
-    f'{symbol}_{duration.replace(" ", "_")}_{bar_size.replace(" ", "_")}.csv'
+    f'{symbol}_{bar_size.replace(" ", "_")}.csv'  # Removed 'duration' from the filename
 )
 
+
+def update_metadata(symbol, bar_size, folder):
+    metadata_path = os.path.join(folder, 'metadata.json')
+    if os.path.exists(metadata_path):
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+    else:
+        metadata = {}
+
+    if symbol not in metadata:
+        metadata[symbol] = {"bar_sizes": []}
+    if bar_size not in metadata[symbol]["bar_sizes"]:
+        metadata[symbol]["bar_sizes"].append(bar_size)
+
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
 # ---- RUN ----
 
 client = IBClient()
@@ -99,6 +116,7 @@ client.disconnect()
 
 if client.df is not None:
     client.df.to_csv(csv_filename)
+    update_metadata(symbol, bar_size, folder)
     print(f"Data saved to: {csv_filename}")
 else:
     print("No data received.")
