@@ -2,6 +2,5 @@
 ibapi
 data/
 __pycache__/
-Frontend/
 node_modules/
 Frontend/node_modules/
